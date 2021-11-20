@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ImplantEmbeddedLoaderStub.cpp">
+    <ClCompile Include="ImplantEmbeddedLoaderStub.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
