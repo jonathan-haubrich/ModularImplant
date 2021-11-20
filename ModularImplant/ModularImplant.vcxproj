@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ModularImplant.cpp" />
+    <ClCompile Include="ModularImplant.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ModularImplant.h" />
