@@ -23,5 +23,8 @@
     <ClInclude Include="ModularImplant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ImplantModule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

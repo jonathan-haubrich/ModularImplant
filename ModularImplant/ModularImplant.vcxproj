@@ -274,6 +274,7 @@
     <ClCompile Include="ModularImplant.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ImplantModule.h" />
     <ClInclude Include="ModularImplant.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
