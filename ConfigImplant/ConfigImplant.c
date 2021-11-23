@@ -5,7 +5,10 @@
 #include "ModularImplant.h"
 
 BOOL
-GetFileContents(PWSTR pszFileName, LPVOID *ppFileContents, PDWORD pdwFileSize)
+GetFileContents(
+	PWSTR pszFileName,
+	LPVOID *ppFileContents,
+	PDWORD pdwFileSize)
 {
 	HANDLE hFile = INVALID_HANDLE_VALUE;
 	DWORD dwFileSizeLow = 0, dwFileSizeHigh = 0, dwBytesRead = 0;
@@ -68,20 +71,22 @@ GetFileContents(PWSTR pszFileName, LPVOID *ppFileContents, PDWORD pdwFileSize)
 INT
 wmain(INT argc, PWSTR argv[])
 {
-	if (argc < 3)
+	if (argc < 4)
 	{
-		fwprintf(stderr, L"Usage: %s <implant_file> <module_file>\r\n", argv[0]);
+		fwprintf(stderr, L"Usage: %s <implant_file> <resource_id> <module_file>\r\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
 	PWSTR pszImplantFileName = argv[1],
-		pszModuleFileName = argv[2];
+		pszResourceId = argv[2],
+		pszModuleFileName = argv[3];
 
 	HANDLE hImplant = NULL;
 
 	PVOID pModuleContents = NULL;
 
-	DWORD dwModuleSize = 0;
+	DWORD dwModuleSize = 0,
+		dwResourceId = _wtoi(pszResourceId);
 
 	hImplant = BeginUpdateResourceW(pszImplantFileName, FALSE);
 	if (NULL == hImplant)
@@ -106,7 +111,7 @@ wmain(INT argc, PWSTR argv[])
 
 	if (FALSE == UpdateResourceW(hImplant,
 		RT_RCDATA,
-		MAKEINTRESOURCEW(Loader),
+		MAKEINTRESOURCEW(dwResourceId),
 		LOCALE_IDEFAULTLANGUAGE,
 		pModuleContents,
 		dwModuleSize))
