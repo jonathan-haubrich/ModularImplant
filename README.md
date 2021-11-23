@@ -44,3 +44,9 @@
        - encrypt: xor, bcrypt, libssl, etc.
        - transmit: network, io, registry
        - is this usable?? 
+
+### CNO Considerations
+ - Init(Local | Remote) puts all logic in both local and remote binaries. Using #define and configurations would prevent that
+ - Current design of building menu on remote means strings must be in binary on remote system, should be avoided
+ - Strings in resources are not currently encoded
+ - Functions are exported by name, need to export by ordinal and NONAME
