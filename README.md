@@ -4,12 +4,21 @@
  - Registered via a callback
  - Modules know their type
  - Shared header defining types
- - Types:
+ - Required modules:
    - Loader
    - Comms
-   - Crypto? (MUST have crypto, can be plaintext if user wants)
-   - Misc?
- - How to categorize modules -- necessary?
+   - Crypto
+   - Control
+ - Rest are functional modules
+   - Interface:
+     - InitModule export with local and remote initialization
+     - GetModuleInfo export
+       - Returns a MODULE_INFO that contains module name/description and list of FUNCTION_INFO
+       - FUNCTION_INFO contains name, description, parameters, function pointer
+       - Uses CONTAINING_RECORD, LIST_ENTRY or SINGLE_LIST_ENTRY, and STRING structs
+       - Used by Control module to present capabilities to user/remote end
+       - ISSUE: strings are on target machine which is not great. Better to maintain strings/info on C2 client and sync when loading/unloading modules. Is added complexity of syncing worthwhile?
+
 
 ### Currently planned modules
  - Loader (reflective injection)
