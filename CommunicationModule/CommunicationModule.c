@@ -27,23 +27,26 @@ DllMain(
 }
 
 BOOL
-StartServer(
-	HMODULE hModule)
+_Success_(return) GetConnectionInfo(
+	_In_ HMODULE hModule,
+	_In_ INT iConnInfoStrId,
+	_Out_ PSOCKADDR_IN psinConnInfo)
 {
+	BOOL fReturn = TRUE;
 	PVOID pBindIpAddressPortResource = NULL;
 	PWSTR pwszBindIpAddressPort = NULL;
 	DWORD dwBindIpAddressPortLen = 0;
-	SOCKADDR_IN sinServer = { 0 };
-	INT iAddressLength = sizeof(sinServer);
+	INT iAddressLength = sizeof(*psinConnInfo);
 	HRESULT hResult = S_FALSE;
 
 	if (FALSE == GetResourceData(hModule,
-		CMRID_BindIpAddressPort,
+		iConnInfoStrId,
 		&pBindIpAddressPortResource,
 		&dwBindIpAddressPortLen))
 	{
 		LOG_ERROR("GetResourceData failed");
-		return FALSE;
+		fReturn = FALSE;
+		goto end;
 	}
 
 	dwBindIpAddressPortLen += sizeof(*pwszBindIpAddressPort);
@@ -53,7 +56,8 @@ StartServer(
 	if (NULL == pwszBindIpAddressPort)
 	{
 		LOG_ERROR("HeapAlloc failed");
-		return FALSE;
+		fReturn = FALSE;
+		goto end;
 	}
 
 	hResult = StringCbCopyNW(pwszBindIpAddressPort,
@@ -64,21 +68,150 @@ StartServer(
 	{
 		LOG_ERROR("StringCbCopyNW failed");
 		HeapFree(GetProcessHeap(), 0, pwszBindIpAddressPort);
-		return FALSE;
+		fReturn = FALSE;
+		goto end;
 	}
-	
+
 	if (0 != WSAStringToAddressW(
 		pwszBindIpAddressPort,
 		AF_INET,
 		NULL,
-		(LPSOCKADDR)&sinServer,
+		(LPSOCKADDR)psinConnInfo,
 		&iAddressLength))
 	{
 		LOG_ERROR("WSAStringToAddress failed");
-		return FALSE;
-	} 
+		fReturn = FALSE;
+		goto end;
+	}
 
-	return TRUE;
+end:
+	return fReturn;
+}
+
+BOOL
+StartServer(
+	HMODULE hModule)
+{
+	SOCKADDR_IN sinServer = { 0 };
+	INT iAddressLength = sizeof(sinServer);
+	SOCKET sServer = INVALID_SOCKET,
+		sRemote = INVALID_SOCKET;
+	BOOL fReturn = TRUE;
+
+	if (FALSE == GetConnectionInfo(hModule,
+		CMRID_BindIpAddressPort,
+		&sinServer))
+	{
+		goto end;
+	}
+	
+	sServer = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0);
+	if (INVALID_SOCKET == sServer)
+	{
+		LOG_ERROR("WSASocket failed");
+		fReturn = FALSE;
+		goto end;
+	}
+
+	if (0 != bind(sServer, (const struct sockaddr*)&sinServer, iAddressLength))
+	{
+		LOG_ERROR("bind failed");
+		fReturn = FALSE;
+		goto end;
+	}
+
+	if (0 != listen(sServer, SOMAXCONN))
+	{
+		LOG_ERROR("listen failed");
+		fReturn = FALSE;
+		goto end;
+	}
+
+	while (TRUE)
+	{
+		sRemote = WSAAccept(sServer,
+			NULL,
+			NULL,
+			NULL,
+			0);
+		if (INVALID_SOCKET == sRemote)
+		{
+			LOG_ERROR("WSAAccept failed");
+			fReturn = FALSE;
+			goto end;
+		}
+		else
+		{
+			LOG_MSG("Connection accepted!");
+		}
+
+		closesocket(sRemote);
+		sRemote = INVALID_SOCKET;
+	}
+
+
+end:
+	if (INVALID_SOCKET != sRemote)
+	{
+		closesocket(sRemote);
+		sRemote = INVALID_SOCKET;
+	}
+	if (INVALID_SOCKET != sServer)
+	{
+		closesocket(sServer);
+		sServer = INVALID_SOCKET;
+	}
+
+	return fReturn;
+}
+
+BOOL
+ConnectRemote(
+	HMODULE hModule)
+{
+	SOCKADDR_IN sinServer = { 0 };
+	INT iAddressLength = sizeof(sinServer);
+	SOCKET sRemote = INVALID_SOCKET;
+	BOOL fReturn = TRUE;
+
+	if (FALSE == GetConnectionInfo(hModule,
+		CMRID_RemoteIpAddressPort,
+		&sinServer))
+	{
+		fReturn = FALSE;
+		goto end;
+	}
+
+	sRemote = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, 0);
+	if (INVALID_SOCKET == sRemote)
+	{
+		LOG_ERROR("WSASocket failed");
+	}
+
+	if (0 != WSAConnect(sRemote,
+		(const struct sockaddr*)&sinServer,
+		iAddressLength,
+		NULL,
+		NULL,
+		NULL,
+		NULL))
+	{
+		LOG_ERROR("WSAConnect failed");
+		fReturn = FALSE;
+		goto end;
+	}
+	else
+	{
+		LOG_MSG("Connection success!");
+	}
+
+end:
+	if (INVALID_SOCKET != sRemote)
+	{
+		closesocket(sRemote);
+	}
+
+	return fReturn;
 }
 
 BOOL
@@ -100,6 +233,8 @@ Init(
 		StartServer(hmThis);
 		break;
 	case MODULE_INIT_REMOTE:
+		ConnectRemote(hmThis);
+		break;
 	default:
 		break;
 	}
