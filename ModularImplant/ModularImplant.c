@@ -20,7 +20,7 @@ wmain(INT argc, PWSTR argv[])
 	DWORD dwCommModuleSize = 0;
 	MODULE_INIT fnInit = NULL;
 	
-	if (FALSE == LoadEmbeddedLoader(&lmLoader))
+	if (FALSE == LoadEmbeddedLoader(&lmLoader) || NULL == lmLoader.hModule)
 	{
 		LOG_ERROR("LoadEmbeddedLoader failed");
 		return EXIT_FAILURE;
@@ -48,7 +48,11 @@ wmain(INT argc, PWSTR argv[])
 		LOG_ERROR("GetProcessAddress failed");
 	}
 
+#ifdef LOCAL
 	fnInit(MODULE_INIT_LOCAL, lmCommunication.hModule);
+#elif REMOTE
+	fnInit(MODULE_INIT_REMOTE, lmCommunication.hModule);
+#endif
 
 	if (lmLoader.hModule &&
 			FALSE == FreeLibrary(lmLoader.hModule))
@@ -134,6 +138,7 @@ GetRandomTempFileNameW(
 	return TRUE;
 }
 
+_Success_(return)
 BOOL
 LoadEmbeddedLoader(
 	PLOADED_MODULE pLoadedModule)
@@ -180,10 +185,6 @@ LoadEmbeddedLoader(
 	{
 		LOG_ERROR("LoadLibrary failed");
 		return FALSE;
-	}
-	else
-	{
-		LOG_MSG("LoadLibrary success");
 	}
 
 	pLoadedModule->hModule = hmLoader;

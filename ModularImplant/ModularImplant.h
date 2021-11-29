@@ -19,9 +19,9 @@
 	);								\
 }
 
-#define LOG_MSG(lpMsg)		LOG(GetStdHandle(STD_OUTPUT_HANDLE), "[+] " lpMsg)
+#define LOG_MSG(lpMsg)		LOG(GetStdHandle(STD_OUTPUT_HANDLE), "[+] " lpMsg "\r\n")
 #define LOG_ERROR(lpMsg)	LOG(GetStdHandle(STD_ERROR_HANDLE),	\
-	"[!] (" __FUNCTION__ ") " lpMsg)
+	"[!] (" __FUNCTION__ ") " lpMsg "\r\n")
 
 #define CLAMP_WCHAR_TO_UPPER(wChar)	\
 	(WCHAR)(((USHORT)wChar % (L'Z' - L'A')) + (L'A'))
@@ -63,6 +63,7 @@ GetRandomTempFileNameW(
 	PWSTR wszTempFileNameBuf,
 	SIZE_T ccFileNameBufSize);
 
+_Success_(return)
 BOOL
 LoadEmbeddedLoader(
 	PLOADED_MODULE pLoadedModule);
