@@ -112,7 +112,7 @@ wmain(INT argc, PWSTR argv[])
 	if (FALSE == UpdateResourceW(hImplant,
 		RT_RCDATA,
 		MAKEINTRESOURCEW(dwResourceId),
-		LOCALE_IDEFAULTLANGUAGE,
+		LANG_SYSTEM_DEFAULT,
 		pModuleContents,
 		dwModuleSize))
 	{
