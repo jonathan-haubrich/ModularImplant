@@ -38,6 +38,8 @@
   <ItemGroup>
     <Compile Include="ArgParser.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="InvalidArgumentException.cs" />
+    <Compile Include="ResourceApi.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

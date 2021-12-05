@@ -12,16 +12,16 @@ class ArgParser
     {
         this.description = description;
         arguments = new List<Argument>();
+        AddArgument("h", "help", "Display this message");
     }
 
     private class Argument
     {
-        private string flag { get; set; }
-        private string longname { get; set; }
+        public string flag { get; }
+        public string longname { get; }
         private string description { get; set;  }
-        private bool required { get; set; }
-        private bool positional { get; set; }
-        private string value { get; set; }
+        public bool required { get; set; }
+        public string value { get; set; }
 
         public Argument(string flag, string longname, string description, bool required)
         {
@@ -29,22 +29,6 @@ class ArgParser
             this.longname = longname;
             this.description = description;
             this.required = required;
-            
-            positional = false;
-            if(flag.Contains("-"))
-            {
-                positional = true;
-            }
-        }
-
-        public bool IsOptional()
-        {
-            return !required;
-        }
-
-        public bool IsPositional()
-        {
-            return positional;
         }
 
         public string CommandStr()
@@ -54,12 +38,6 @@ class ArgParser
             if (!string.IsNullOrEmpty(longname))
             {
                 commandLine += string.Format("/--{0}", longname);
-            }
-
-            if (IsOptional())
-            {
-                commandLine = "[ " + commandLine;
-                commandLine += " ]";
             }
 
             return commandLine;
@@ -78,6 +56,16 @@ class ArgParser
 
             return options;
         }
+
+        public override string ToString()
+        {
+            if(null != longname)
+            {
+                return longname;
+            }
+
+            return flag;
+        }
     }
 
     public void AddArgument(string flag, string description, bool required = false)
@@ -95,27 +83,15 @@ class ArgParser
     {
         string commandLine = System.AppDomain.CurrentDomain.FriendlyName;
         string options = "";
-        string positionals = "";
 
         foreach(Argument arg in arguments)
         {
             commandLine += string.Format(" {0}", arg.CommandStr());
-            if(arg.IsPositional())
-            {
-                positionals += string.Format("\r\n\t{0}", arg.DescriptionStr());
-            }
-            else
-            {
-                options += string.Format("\r\n\t{0}", arg.DescriptionStr());
-            }
+            options += string.Format("\r\n\t{0}", arg.DescriptionStr());
         }
 
         System.Console.WriteLine("usage: {0}\r\n\r\n", description);
         System.Console.WriteLine("{0}\r\n\r\n", commandLine);
-        if(!string.IsNullOrEmpty(positionals))
-        {
-            System.Console.WriteLine("positionals:\t{0}", positionals);
-        }
         if(!string.IsNullOrEmpty(options))
         {
             System.Console.WriteLine("options:\t{0}", options);
@@ -124,6 +100,67 @@ class ArgParser
 
     public void Parse(string[] args)
     {
-        
+        if(0 == args.Length)
+        {
+            Usage();
+            return;
+        }
+
+        for(int i = 0; i < args.Length; ++i)
+        {
+            if(args[i][0].Equals('-'))
+            {
+                string value = args[i].Substring(1);
+                if(value.Length > 0 && value[0].Equals('-'))
+                {
+                    value = value.Substring(1);
+                }
+                Argument arg = arguments.Find((s) => s.flag.Equals(value) || s.longname.Equals(value));
+                
+                if(null == arg)
+                {
+                    throw new InvalidArgumentException(string.Format("No option for agument: {0}", value));
+                }
+
+                try
+                {
+                    arg.value = args[i + 1];
+                    ++i;
+                }
+                catch(System.IndexOutOfRangeException)
+                {
+                    throw new InvalidArgumentException(string.Format("No argument provided for flag: {0}", value));
+                }
+            }
+        }
+
+        foreach(Argument arg in arguments)
+        {
+            if(arg.required && null == arg.value)
+            {
+                throw new InvalidArgumentException(string.Format("No argument provided for required argument: {0}", arg));
+            }
+        }
+    }
+
+    public string this[string key]
+    {
+        get
+        {
+            string value = null;
+            Argument arg = (arguments.Find((s) => s.flag.Equals(key)));
+            if (null != arg)
+            {
+                value = arg.value;
+            }
+
+            arg = (arguments.Find((s) => s.longname.Equals(key)));
+            if(null != arg)
+            {
+                value = arg.value;
+            }
+
+            return value;
+        }
     }
 }
