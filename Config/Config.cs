@@ -4,15 +4,11 @@ public class Config
 {
     public static void Main(string[] args)
     {
-        int idx = Array.FindIndex(args, s => s == "-s");
+        ArgParser parser = new ArgParser("Configures an implant or module");
 
-        try
-        {
-            Console.WriteLine("Found arg: {0}", args[idx + 1]);
-        }
-        catch(System.IndexOutOfRangeException)
-        {
-            Console.Error.WriteLine("No arg provided to -s flag");
-        }
+        parser.AddArgument("l", "loader", "File name of the loader module to be embedded");
+        parser.AddArgument("c", "comms", "File name of the comms module to be embedded");
+
+        parser.Usage();
     }
 }
