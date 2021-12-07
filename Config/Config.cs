@@ -55,8 +55,11 @@ public class Config
             (uint)dataLen))
         {
             Console.WriteLine("UpdateResource failed: {0}\r\n", Marshal.GetLastWin32Error());
+            Marshal.FreeHGlobal(data);
             return;
         }
+
+        Marshal.FreeHGlobal(data);
 
         if(false == ResourceApi.EndUpdateResource(hResource, false))
         {

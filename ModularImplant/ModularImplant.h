@@ -32,6 +32,15 @@ enum MODULAR_IMPLANT_RESOURCE_IDS
 	MIRID_Communication
 };
 
+enum MODULAR_IMPLANT_REQUIRED_MODULES
+{
+	MIRM_Loader = 0,
+	MIRM_Crypto,
+	MIRM_Comms,
+	MIRM_C2,
+	MIRM_NUM_REQUIRED_MODULES,
+};
+
 typedef struct _LOADED_MODULE
 {
 	HMODULE	hModule;
